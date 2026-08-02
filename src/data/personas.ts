@@ -1,0 +1,9 @@
+import type { Persona } from '../types'
+export const personas: Persona[] = [
+  {id:'chris',name:'Chris',title:'The Auditor',focus:'Evidence, accuracy and triangulation',description:'No unsupported claim gets past Chris.',challenge:'What evidence supports that?',push:'What evidence contradicts your conclusion?',colour:'#789b7b',initials:'CA'},
+  {id:'jenny',name:'Jenny',title:'The Impact Inspector',focus:'What changed as a result',description:'A meeting took place. Jenny wants impact.',challenge:'What difference has that made?',push:'You have described the action. What changed?',colour:'#a99777',initials:'JI'},
+  {id:'raj',name:'Raj',title:'The Consistency Inspector',focus:'Practice across the organisation',description:'One strong example is not yet a system.',challenge:'Is that consistent across all areas?',push:'You have given me one example. How do you know it is typical?',colour:'#77918d',initials:'RC'},
+  {id:'sarah',name:'Sarah',title:'The Learner Voice Inspector',focus:'The lived experience of learners',description:'Sarah puts learners at the heart of every question.',challenge:'What would learners say?',push:'What would a learner experiencing this tell me?',colour:'#927d83',initials:'SL'},
+  {id:'martin',name:'Martin',title:'The Governance Inspector',focus:'Oversight, challenge and assurance',description:'Martin wants governors assured, not merely informed.',challenge:'How are governors assured?',push:'How are governors assured rather than merely informed?',colour:'#8e8979',initials:'MG'},
+  {id:'elaine',name:'Elaine',title:'The Curriculum Specialist',focus:'Sequencing, assessment and expertise',description:'Elaine digs deep into curriculum thinking.',challenge:'Why is the curriculum sequenced that way?',push:'Why was that curriculum decision made?',colour:'#828a77',initials:'EC'}
+]
