@@ -8,7 +8,7 @@ Requires Node.js 20+. Run `npm install`, then `npm run dev`. Checks: `npm test`,
 
 ## Deploy to GitHub Pages
 
-Run `npm run deploy` to build and publish `dist` to a `gh-pages` branch, then select that branch in **Settings → Pages**. The script uses `npx gh-pages`; the first run may ask to download that publishing utility. Vite uses relative asset paths, so repository subdirectories work without editing a base URL.
+The included GitHub Actions workflow tests, builds and deploys the site automatically whenever `main` changes. In **Settings → Pages**, select **GitHub Actions** as the source. To request another deployment manually, run `npm run deploy` after authenticating the GitHub CLI. Vite uses relative asset paths, so repository subdirectories work without editing a base URL.
 
 ## Add content
 
