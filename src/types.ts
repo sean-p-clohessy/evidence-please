@@ -25,4 +25,4 @@ export type InspectionQuestion = {
 
 export type ReviewAnswers = Record<string, boolean>
 export type Ratings = Record<'Evidence'|'Impact'|'Consistency'|'Insight'|'Learner focus'|'Brevity'|'Honesty'|'Directness', number>
-export type Debrief = { outcome: string; summary: string; strengths: string[]; opportunities: string[]; ratings: Ratings }
+export type Debrief = { outcome: string; summary: string; strengths: string[]; opportunities: string[]; ratings: Ratings; score: number }

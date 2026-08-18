@@ -70,6 +70,12 @@ export const typedAnswerPrompts = (answer:string):string[] => {
 }
 
 const emptyRatings = ():Ratings => ({Evidence:1,Impact:1,Consistency:1,Insight:1,'Learner focus':1,Brevity:3,Honesty:1,Directness:1})
+export const calculateGameScore = (ratings:Ratings) => {
+  const values=Object.values(ratings)
+  const minimum=values.length
+  const maximum=values.length*5
+  return Math.round(((values.reduce((sum,value)=>sum+value,0)-minimum)/(maximum-minimum))*100)
+}
 export const feedbackFromBuild = (selected:Partial<Record<AnswerSection,AnswerOption>>, evidenceCount=0):Debrief => {
   const options = Object.values(selected).filter(Boolean) as AnswerOption[]
   const signals = options.flatMap(o=>o.qualitySignals)
@@ -88,7 +94,7 @@ export const feedbackFromBuild = (selected:Partial<Record<AnswerSection,AnswerOp
     summary:strong ? 'You built a balanced response with evidence, action, impact and an honest view of what remains.' : 'Your response has a credible foundation, but some selected statements need firmer evidence or clearer impact.',
     strengths:[...new Set(signals)].slice(0,3).map(s=>`You demonstrated ${s}.`),
     opportunities:[...new Set(weaknesses)].slice(0,3).map(w=>`Watch for ${w}.`),
-    ratings
+    ratings, score:calculateGameScore(ratings)
   }
 }
 
@@ -117,6 +123,6 @@ export const feedbackFromReview = (review:ReviewAnswers, answer:string, evidence
     summary:signals.keywordList?'The response contains relevant terms, but isolated words are not treated as evidence of a developed answer.':yes>=5&&supportedCount>=3?'Your self-review and the visible structure of your response suggest a direct, balanced rehearsal answer.':'Your reflection suggests another pass. These prompts identify visible features, not the meaning or accuracy of your response.',
     strengths:[...observed,...Object.entries(review).filter(([,v])=>v).map(([k])=>`Self-review confirmed: ${k}.`)].slice(0,3),
     opportunities:[...typedAnswerPrompts(answer),...Object.entries(review).filter(([,v])=>!v).map(([k])=>`Revisit your self-review item: ${k}.`)].slice(0,3),
-    ratings
+    ratings, score:calculateGameScore(ratings)
   }
 }

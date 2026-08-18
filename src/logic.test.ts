@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { activeFramework, ofstedReportSources, reportFindingPatterns } from './data/ofstedCorpus'
 import { questions } from './data/questions'
 import { provisionStreams } from './data/settings'
-import { analyseTypedAnswer, canPush, feedbackFromBuild, feedbackFromReview, filterQuestions, getFollowUp, nextQuestion, shuffleOptions, typedAnswerPrompts } from './utils/logic'
+import { analyseTypedAnswer, calculateGameScore, canPush, feedbackFromBuild, feedbackFromReview, filterQuestions, getFollowUp, nextQuestion, shuffleOptions, typedAnswerPrompts } from './utils/logic'
 describe('question selection',()=>{
   const college='General Further Education College'
   it('filters by setting',()=>expect(filterQuestions(questions,college,'Senior Leader',[]).every(q=>q.settings.includes(college))).toBe(true))
@@ -25,6 +25,16 @@ describe('feedback',()=>{
     'Our current position is mixed. Survey data showed learner confidence increased from 62% to 76% after leaders changed tutorial support. As a result, learners across three groups reported better access, although one group remains weaker.',
     2
   ).outcome).toBe('You Answered the Question'))
+  it('converts reflective indicators into a bounded game score',()=>{
+    const low={Evidence:1,Impact:1,Consistency:1,Insight:1,'Learner focus':1,Brevity:1,Honesty:1,Directness:1}
+    const high={Evidence:5,Impact:5,Consistency:5,Insight:5,'Learner focus':5,Brevity:5,Honesty:5,Directness:5}
+    expect(calculateGameScore(low)).toBe(0)
+    expect(calculateGameScore(high)).toBe(100)
+  })
+  it('includes the calculated score in debrief feedback',()=>{
+    const result=feedbackFromReview({},'A short response with enough words to form one complete sentence.',0)
+    expect(result.score).toBe(calculateGameScore(result.ratings))
+  })
   it('respects push limits',()=>{expect(canPush(1)).toBe(true);expect(canPush(2)).toBe(false)})
 })
 
