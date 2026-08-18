@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { corePalette } from './data/palette'
+import { paletteIds, palettes } from './data/palette'
 
 const luminance=(hex:string)=>{
   const channels=[1,3,5].map(index=>parseInt(hex.slice(index,index+2),16)/255).map(value=>value<=.04045?value/12.92:((value+.055)/1.055)**2.4)
@@ -10,16 +10,12 @@ const contrast=(foreground:string,background:string)=>{
   return (values[0]+.05)/(values[1]+.05)
 }
 
-describe('core colour contrast',()=>{
-  it.each([
-    ['main text',corePalette.text,'#0c100d'],
-    ['muted text',corePalette.muted,'#0c100d'],
-    ['accent text',corePalette.green2,'#151a16'],
-    ['gold text',corePalette.gold,'#151a16'],
-    ['paper text',corePalette.ink,corePalette.paper],
-    ['red on paper',corePalette.red,corePalette.paper]
-  ])('%s meets WCAG AA contrast for normal text',(_,foreground,background)=>{
-    expect(foreground).toMatch(/^#[0-9a-f]{6}$/i)
-    expect(contrast(foreground,background)).toBeGreaterThanOrEqual(4.5)
+describe('palette colour contrast',()=>{
+  it.each(paletteIds)('%s meets WCAG AA contrast across core text pairings',id=>{
+    const colours=palettes[id].colours
+    for(const [foreground,background] of [[colours.text,colours.appBg],[colours.muted,colours.appBg],[colours.green2,colours.surface],[colours.gold,colours.surface],[colours.ink,colours.paper],[colours.red,colours.paper]]){
+      expect(foreground).toMatch(/^#[0-9a-f]{6}$/i)
+      expect(contrast(foreground,background)).toBeGreaterThanOrEqual(4.5)
+    }
   })
 })

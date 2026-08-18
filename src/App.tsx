@@ -6,7 +6,7 @@ import { modes, provisionStreams, roles, settings, themes } from './data/setting
 import type { AnswerMethod, AnswerOption, AnswerSection, Debrief, ModeId, PersonaId, ProvisionStream, ReviewAnswers } from './types'
 import { canPush, feedbackFromBuild, feedbackFromReview, filterQuestions, getFollowUp, nextQuestion, shuffleOptions, typedAnswerPrompts } from './utils/logic'
 import { InterviewPacks } from './InterviewPacks'
-import { paletteVariables } from './data/palette'
+import { paletteIds, palettes, paletteVariables, type PaletteId } from './data/palette'
 
 type Screen='title'|'setup'|'session'|'debrief'|'packs'
 const reviewItems=[
@@ -52,6 +52,10 @@ function App() {
   const [debrief,setDebrief]=useState<Debrief|null>(null)
   const [completed,setCompleted]=useState(0)
   const [showReview,setShowReview]=useState(false)
+  const [paletteId,setPaletteId]=useState<PaletteId>(()=>{
+    try{ const saved=window.localStorage.getItem('evidence-please-palette'); return paletteIds.includes(saved as PaletteId)?saved as PaletteId:'archive' }
+    catch{ return 'archive' }
+  })
   const headingRef=useRef<HTMLHeadingElement>(null)
 
   const persona=personas.find(p=>p.id===personaId)!
@@ -64,6 +68,7 @@ function App() {
   const target=mode==='mock'?Math.min(6,Math.max(4,selectedThemes.length*2)):1
 
   useEffect(()=>{ headingRef.current?.focus() },[screen])
+  useEffect(()=>{ try{ window.localStorage.setItem('evidence-please-palette',paletteId) }catch{} },[paletteId])
   useEffect(()=>{
     if(screen!=='session') return
     const tick=()=>{ const seconds=Math.floor((Date.now()-startedAt)/1000); setElapsed(`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`) }
@@ -102,7 +107,7 @@ function App() {
   const toggleStream=(stream:ProvisionStream)=>setSelectedStreams(v=>v.includes(stream)?(v.length>1?v.filter(item=>item!==stream):v):[...v,stream])
   const returnHome=()=>{ setMethod('build'); setScreen('title') }
 
-  return <div className="app-shell" style={paletteVariables as React.CSSProperties}>
+  return <div className="app-shell" style={paletteVariables(paletteId) as React.CSSProperties}>
     <header className="topbar"><span className="seal">EP</span><span>EVIDENCE CONTROL SYSTEM</span><span className="top-status"><i/> SYSTEM READY · v0.1.0</span></header>
     <main id="main">
       {screen==='title' && <section className="title-screen" aria-labelledby="title">
@@ -112,6 +117,7 @@ function App() {
           <p className="tagline">HOW DO YOU KNOW?</p>
           <p className="intro">Practise challenging inspection-style conversations.<br/>Strengthen your answers. Stand up to scrutiny.</p>
           <div className="title-actions"><button className="primary big" onClick={()=>setScreen('setup')}>Begin inspection <span>→</span></button><button className="secondary big" onClick={()=>setScreen('packs')}>Bodyswaps interview packs <span>→</span></button></div>
+          <fieldset className="palette-picker"><legend>Colour palette</legend>{paletteIds.map(id=><button key={id} aria-pressed={paletteId===id} className={paletteId===id?'selected':''} onClick={()=>setPaletteId(id)}><i style={{background:`linear-gradient(135deg,${palettes[id].colours.surface} 50%,${palettes[id].colours.green2} 50%)`}}/><span><strong>{palettes[id].name}</strong><small>{palettes[id].description}</small></span></button>)}</fieldset>
         </div>
         <div className="title-art" aria-hidden="true">
           <div className="folders"><i>REPORTS</i><i>DATA</i><i>EVIDENCE</i></div>
