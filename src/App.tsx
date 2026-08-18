@@ -6,6 +6,7 @@ import { modes, provisionStreams, roles, settings, themes } from './data/setting
 import type { AnswerMethod, AnswerOption, AnswerSection, Debrief, ModeId, PersonaId, ProvisionStream, ReviewAnswers } from './types'
 import { canPush, feedbackFromBuild, feedbackFromReview, filterQuestions, getFollowUp, nextQuestion, shuffleOptions, typedAnswerPrompts } from './utils/logic'
 import { InterviewPacks } from './InterviewPacks'
+import { paletteVariables } from './data/palette'
 
 type Screen='title'|'setup'|'session'|'debrief'|'packs'
 const reviewItems=[
@@ -33,7 +34,7 @@ function App() {
   const [role,setRole]=useState(roles[0])
   const [selectedThemes,setSelectedThemes]=useState<string[]>(['Quality of Education'])
   const [selectedStreams,setSelectedStreams]=useState<ProvisionStream[]>([...provisionStreams])
-  const [method,setMethod]=useState<AnswerMethod>('type')
+  const [method,setMethod]=useState<AnswerMethod>('build')
   const [currentId,setCurrentId]=useState('')
   const [used,setUsed]=useState<string[]>([])
   const [answer,setAnswer]=useState('')
@@ -99,8 +100,9 @@ function App() {
   const toggleEvidence=(item:string)=>setEvidence(v=>v.includes(item)?v.filter(x=>x!==item):v.length<3?[...v,item]:v)
   const toggleTheme=(theme:string)=>setSelectedThemes(v=>v.includes(theme)?(v.length>1?v.filter(t=>t!==theme):v):[...v,theme])
   const toggleStream=(stream:ProvisionStream)=>setSelectedStreams(v=>v.includes(stream)?(v.length>1?v.filter(item=>item!==stream):v):[...v,stream])
+  const returnHome=()=>{ setMethod('build'); setScreen('title') }
 
-  return <div className="app-shell">
+  return <div className="app-shell" style={paletteVariables as React.CSSProperties}>
     <header className="topbar"><span className="seal">EP</span><span>EVIDENCE CONTROL SYSTEM</span><span className="top-status"><i/> SYSTEM READY · v0.1.0</span></header>
     <main id="main">
       {screen==='title' && <section className="title-screen" aria-labelledby="title">
@@ -147,7 +149,7 @@ function App() {
 
       {screen==='session' && current && <section className="session-screen" aria-labelledby="session-heading">
         <div className="session-status">
-          <span>Inspection in progress</span><span>{mode==='mock'?`Question ${completed+1} of ${target}`:'Question 1 of 1'}</span><span aria-label={`Elapsed time ${elapsed}`}>◷ {elapsed}</span>
+          <button className="session-home" onClick={returnHome}>← Back to homepage</button><span>Inspection in progress</span><span>{mode==='mock'?`Question ${completed+1} of ${target}`:'Question 1 of 1'}</span><span aria-label={`Elapsed time ${elapsed}`}>◷ {elapsed}</span>
         </div>
         <div className="inspector-strip"><Avatar id={personaId} large/><div><small>{persona.title} · toolkit area: {current.frameworkArea}</small><h1 id="session-heading" ref={headingRef} tabIndex={-1}>{persona.name} asks:</h1><p>{current.question}</p></div></div>
         <div className="session-grid">
