@@ -24,7 +24,7 @@ describe('feedback',()=>{
     {position:true,evidence:true,action:true,impact:true,weakness:true,direct:true},
     'Our current position is mixed. Survey data showed learner confidence increased from 62% to 76% after leaders changed tutorial support. As a result, learners across three groups reported better access, although one group remains weaker.',
     2
-  ).outcome).toBe('You Answered the Question'))
+  ).outcome).toBe('Credible and Well Evidenced'))
   it('converts reflective indicators into a bounded game score',()=>{
     const low={Evidence:1,Impact:1,Consistency:1,Insight:1,'Learner focus':1,Brevity:1,Honesty:1,Directness:1}
     const high={Evidence:5,Impact:5,Consistency:5,Insight:5,'Learner focus':5,Brevity:5,Honesty:5,Directness:5}
@@ -50,9 +50,16 @@ describe('feedback',()=>{
       impact:builder.impact?.find(option=>option.weaknesses.includes('impact not demonstrated')),
       remainingChallenge:builder.remainingChallenge?.[0]
     },2,builder)
-    expect(result.ratings.Impact).toBe(1)
+    expect(result.ratings.Impact).toBeLessThan(4)
     expect(result.outcome).not.toBe('Credible and Well Evidenced')
     expect(result.improvementExample).toBeTruthy()
+  })
+  it('makes a maximum quick builder score attainable with the strongest complete answer',()=>{
+    const builder=questions[0].answerBuilder!
+    const best=Object.fromEntries(Object.entries(builder).map(([section,options])=>[section,[...(options??[])].sort((a,b)=>(b.qualitySignals.length*2-b.weaknesses.length)-(a.qualitySignals.length*2-a.weaknesses.length))[0]]))
+    const result=feedbackFromBuild(best,3,builder)
+    expect(result.score).toBe(100)
+    expect(result.outcome).toBe('Credible and Well Evidenced')
   })
   it('respects push limits',()=>{expect(canPush(1)).toBe(true);expect(canPush(2)).toBe(false)})
 })
@@ -89,7 +96,7 @@ describe('typed-answer coaching',()=>{
   it('gives stronger reflective signals to a developed answer',()=>{
     const developedResult=feedbackFromReview(allYes,developed,2)
     const thinResult=feedbackFromReview(allYes,'Evidence impact learner consistent honest direct',2)
-    expect(developedResult.outcome).toBe('You Answered the Question')
+    expect(developedResult.outcome).toBe('Credible and Well Evidenced')
     expect(developedResult.ratings.Evidence).toBeGreaterThan(thinResult.ratings.Evidence)
     expect(developedResult.ratings.Impact).toBeGreaterThan(thinResult.ratings.Impact)
   })

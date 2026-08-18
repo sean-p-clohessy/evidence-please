@@ -103,22 +103,33 @@ export const feedbackFromBuild = (selected:Partial<Record<AnswerSection,AnswerOp
   const options = Object.values(selected).filter(Boolean) as AnswerOption[]
   const signals = options.flatMap(o=>o.qualitySignals)
   const weaknesses = options.flatMap(o=>o.weaknesses)
+  const selectedText=options.map(option=>option.text).join(' ')
+  const learnerMentions=options.filter(option=>/\b(learner|student|apprentice)s?\b/i.test(option.text)).length
   const ratings=emptyRatings()
   ratings.Evidence=Math.min(5,1+signals.filter(s=>['evidence','triangulation','specificity'].includes(s)).length+Math.min(1,evidenceCount))
-  ratings.Impact=Math.min(5,1+signals.filter(s=>s==='impact').length*2)
+  ratings.Impact=Math.min(5,1+signals.filter(s=>s==='impact').length*3+Math.min(1,evidenceCount))
   ratings.Consistency=Math.min(5,1+signals.filter(s=>s==='consistency').length*2)
   ratings.Insight=Math.min(5,1+signals.filter(s=>['honesty','specificity'].includes(s)).length)
   ratings.Honesty=Math.min(5,1+signals.filter(s=>s==='honesty').length*2)
-  ratings.Directness=Math.min(5,2+Number(options.length>=4))
-  ratings['Learner focus']=Math.min(5,1+signals.filter(s=>s==='learner focus').length*2)
+  ratings.Directness=Math.min(5,options.length)
+  ratings['Learner focus']=learnerMentions>0||signals.includes('learner focus')?5:1
+  ratings.Brevity=selectedText.length>1200?2:selectedText.length>800?4:5
   const strong=weaknesses.length===0&&signals.includes('evidence')&&signals.includes('impact')
   const score=calculateGameScore(ratings)
+  const weaknessOpportunities=[...new Set(weaknesses)].map(w=>weaknessCoaching[w]??`Strengthen the part affected by “${w}” by adding specific evidence and explaining the resulting learner impact.`)
+  const ratingOpportunities=[
+    ratings.Impact<4&&'Make the impact explicit: state what changed for learners, quantify or describe the difference, and connect it to the action taken.',
+    ratings['Learner focus']<4&&'Bring learners or apprentices into the answer directly: explain whose experience or outcome changed and how.',
+    ratings.Directness<4&&'Open with a direct one-sentence answer to the question before adding explanation and evidence.',
+    ratings.Evidence<4&&'Name the relevant evidence and explain the finding, comparison or exception it revealed.',
+    ratings.Consistency<4&&'Explain how representative the claim is across groups or provision and identify any known variation.'
+  ].filter(Boolean) as string[]
   return {
-    outcome:strong ? 'Credible and Well Evidenced' : weaknesses.includes('process only') || weaknesses.includes('activity only') ? 'Too Much Process, Not Enough Impact' : 'Requires More Specificity',
+    outcome:score>=85&&strong?'Credible and Well Evidenced':score>=70?'Well Structured, With Gaps':score>=55?'Credible Foundation — Keep Building':weaknesses.includes('process only')||weaknesses.includes('activity only')?'Too Much Process, Not Enough Impact':'Requires More Specificity',
     summary:strong ? 'You built a balanced response with evidence, action, impact and an honest view of what remains.' : 'Your response has a credible foundation, but some selected statements need firmer evidence or clearer impact.',
     strengths:[...new Set(signals)].slice(0,3).map(s=>`You demonstrated ${s}.`),
-    opportunities:[...new Set(weaknesses)].slice(0,3).map(w=>weaknessCoaching[w]??`Strengthen the part affected by “${w}” by adding specific evidence and explaining the resulting learner impact.`),
-    ratings, score, improvementExample:score<70?buildImprovementExample(builder):undefined
+    opportunities:[...weaknessOpportunities,...ratingOpportunities].filter((item,index,all)=>all.indexOf(item)===index).slice(0,3),
+    ratings, score, improvementExample:score<70||Object.values(ratings).some(value=>value<3)?buildImprovementExample(builder):undefined
   }
 }
 
@@ -128,12 +139,12 @@ export const feedbackFromReview = (review:ReviewAnswers, answer:string, evidence
   const ratings=emptyRatings()
   ratings.Evidence=Math.min(5,1+Number(review.evidence)+Number(signals.evidenceFinding)*2+Math.min(1,evidenceCount))
   ratings.Impact=Math.min(5,1+Number(review.impact)+Number(signals.causalImpact)*2)
-  ratings.Insight=Math.min(5,1+Number(review.position)+Number(review.weakness)+Number(signals.honestQualification))
-  ratings.Honesty=Math.min(5,1+Number(review.weakness)*2+Number(signals.honestQualification))
-  ratings.Directness=Math.min(5,1+Number(review.direct)*2+Number(signals.directOpening))
-  ratings.Consistency=Math.min(5,1+Number(review.evidence)+Number(signals.breadth)*2)
-  ratings['Learner focus']=signals.learnerConnection?4:1
-  ratings.Brevity=answer.length > 1200 ? 2 : answer.length > 80 ? 4 : 3
+  ratings.Insight=Math.min(5,1+Number(review.position)+Number(review.weakness)+Number(signals.honestQualification)+Number(signals.substantive))
+  ratings.Honesty=Math.min(5,1+Number(review.weakness)*2+Number(signals.honestQualification)*2)
+  ratings.Directness=Math.min(5,1+Number(review.direct)*2+Number(signals.directOpening)+Number(signals.substantive))
+  ratings.Consistency=Math.min(5,1+Number(review.evidence)+Number(signals.breadth)*2+Math.min(1,evidenceCount))
+  ratings['Learner focus']=signals.learnerConnection?5:1
+  ratings.Brevity=answer.length>1200?2:answer.length>=80?5:3
   const observed=[
     signals.evidenceFinding&&'Your wording explains what a source showed.',
     signals.causalImpact&&'Your wording connects action with a stated change.',
@@ -144,7 +155,7 @@ export const feedbackFromReview = (review:ReviewAnswers, answer:string, evidence
   const supportedCount=observed.length
   const score=calculateGameScore(ratings)
   return {
-    outcome:yes>=5&&supportedCount>=3?'You Answered the Question':yes>=3&&signals.substantive?'Convincing, With Reservations':'Evidence Pending',
+    outcome:score>=85&&yes>=5&&supportedCount>=3?'Credible and Well Evidenced':score>=70?'Well Structured, With Gaps':score>=55?'Credible Foundation — Keep Building':'Evidence Pending',
     summary:signals.keywordList?'The response contains relevant terms, but isolated words are not treated as evidence of a developed answer.':yes>=5&&supportedCount>=3?'Your self-review and the visible structure of your response suggest a direct, balanced rehearsal answer.':'Your reflection suggests another pass. These prompts identify visible features, not the meaning or accuracy of your response.',
     strengths:[...observed,...Object.entries(review).filter(([,v])=>v).map(([k])=>`Self-review confirmed: ${k}.`)].slice(0,3),
     opportunities:[...typedAnswerPrompts(answer),...Object.entries(review).filter(([,v])=>!v).map(([k])=>`Revisit your self-review item: ${k}.`)].slice(0,3),
