@@ -147,7 +147,6 @@ function App() {
           <span>Inspection in progress</span><span>{mode==='mock'?`Question ${completed+1} of ${target}`:'Question 1 of 1'}</span><span aria-label={`Elapsed time ${elapsed}`}>◷ {elapsed}</span>
         </div>
         <div className="inspector-strip"><Avatar id={personaId} large/><div><small>{persona.title} · toolkit area: {current.frameworkArea}</small><h1 id="session-heading" ref={headingRef} tabIndex={-1}>{persona.name} asks:</h1><p>{current.question}</p></div></div>
-        {followUp && <div className="follow-up" role="status"><strong>{persona.name} follows up:</strong> {followUp}<span>{method==='build'?'Revise any answer components that need changing, then write your direct response in the follow-up box below.':'Revise your answer above so that it responds directly to this challenge, then continue.'}</span></div>}
         <div className="session-grid">
           <div className="work-area">
             <div className="tabs" role="tablist" aria-label="Session workspace">
@@ -160,11 +159,13 @@ function App() {
                 <div className="counter">{answer.length} characters</div>
                 {writingPrompts.length>0 && <div className="writing-prompts" aria-live="polite"><strong>Rehearsal prompts</strong><span>Pattern-based prompts only; your response has not been graded.</span><ul>{writingPrompts.map(prompt=><li key={prompt}>{prompt}</li>)}</ul></div>}
                 {showReview && <fieldset className="self-review"><legend>Self-review before submission</legend>{reviewItems.map(([id,label])=><label key={id}><input type="checkbox" checked={!!review[id]} onChange={e=>setReview(v=>({...v,[id]:e.target.checked}))}/>{label}</label>)}</fieldset>}
+                {followUp && <div className="follow-up" role="status"><strong>{persona.name} follows up:</strong> {followUp}<span>Revise your answer above so that it responds directly to this challenge, then continue.</span></div>}
               </> : <div className="builder">
                 {sections.map(section=><div className="builder-section" key={section.id}><h2>{section.label}</h2><div className="option-list">
                   {shuffleOptions(current.answerBuilder?.[section.id]??[],`${current.id}-${section.id}-${startedAt}`).map(o=><button key={o.id} className={selected[section.id]?.id===o.id?'answer-option selected':'answer-option'} onClick={()=>setSelected(v=>({...v,[section.id]:o}))} aria-pressed={selected[section.id]?.id===o.id}>{o.text}</button>)}
                   {!current.answerBuilder?.[section.id] && <p className="unavailable">No prepared components for this prompt. Choose another question or use Type My Answer.</p>}
                 </div></div>)}
+                {followUp && <div className="follow-up" role="status"><strong>{persona.name} follows up:</strong> {followUp}<span>Revise any answer components that need changing, then write your direct response below.</span></div>}
                 {followUp && <div className="follow-up-response">
                   <label htmlFor="follow-up-answer"><strong>Your response to the follow-up</strong><span>Explain the point in your own words. You can also change any selected component above.</span></label>
                   <textarea id="follow-up-answer" rows={5} value={followUpAnswer} onChange={e=>setFollowUpAnswer(e.target.value)} placeholder={`Respond directly to ${persona.name}'s follow-up…`}/>
