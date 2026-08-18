@@ -5,8 +5,9 @@ import { questions } from './data/questions'
 import { modes, provisionStreams, roles, settings, themes } from './data/settings'
 import type { AnswerMethod, AnswerOption, AnswerSection, Debrief, ModeId, PersonaId, ProvisionStream, ReviewAnswers } from './types'
 import { canPush, feedbackFromBuild, feedbackFromReview, filterQuestions, getFollowUp, nextQuestion, shuffleOptions, typedAnswerPrompts } from './utils/logic'
+import { InterviewPacks } from './InterviewPacks'
 
-type Screen='title'|'setup'|'session'|'debrief'
+type Screen='title'|'setup'|'session'|'debrief'|'packs'
 const reviewItems=[
   ['position','Did I clearly establish the current position?'],['evidence','Did I use specific evidence?'],
   ['action','Did I explain what leaders did?'],['impact','Did I describe impact?'],
@@ -108,7 +109,7 @@ function App() {
           <h1 id="title" ref={headingRef} tabIndex={-1}>EVIDENCE,<br/><span>PLEASE</span></h1>
           <p className="tagline">HOW DO YOU KNOW?</p>
           <p className="intro">Practise challenging inspection-style conversations.<br/>Strengthen your answers. Stand up to scrutiny.</p>
-          <button className="primary big" onClick={()=>setScreen('setup')}>Begin inspection <span>→</span></button>
+          <div className="title-actions"><button className="primary big" onClick={()=>setScreen('setup')}>Begin inspection <span>→</span></button><button className="secondary big" onClick={()=>setScreen('packs')}>Bodyswaps interview packs <span>→</span></button></div>
         </div>
         <div className="title-art" aria-hidden="true">
           <div className="folders"><i>REPORTS</i><i>DATA</i><i>EVIDENCE</i></div>
@@ -120,6 +121,8 @@ function App() {
           <details><summary>Disclaimer</summary><p>Evidence, Please is an independent professional-development and rehearsal tool. It is not affiliated with, endorsed by or produced by Ofsted. Questions and feedback support reflection and do not predict inspection activity or represent official inspection judgements.</p></details>
         </div>
       </section>}
+
+      {screen==='packs' && <InterviewPacks onBack={()=>setScreen('title')}/>}
 
       {screen==='setup' && <section className="setup-screen" aria-labelledby="setup-heading">
         <div className="section-heading"><div><p className="eyebrow">Form EP-01 // session requisition</p><h1 id="setup-heading" ref={headingRef} tabIndex={-1}>Prepare your inspection</h1></div><button className="text-button" onClick={()=>setScreen('title')}>← Return</button></div>

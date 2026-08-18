@@ -2,7 +2,7 @@
 
 A browser-based professional-development game for education leaders to rehearse challenging inspection-style conversations. It is a static React/TypeScript application with no login, backend, uploads or remote assessment.
 
-The current content release is focused on General Further Education and Tertiary colleges and the renewed FE and skills inspection toolkit in active use from 10 November 2025. See [OFSTED_SOURCE_NOTES.md](OFSTED_SOURCE_NOTES.md) for the versioned 10-report pilot corpus, scope boundaries and attribution.
+The current content release is focused on General Further Education and Tertiary colleges and the renewed FE and skills inspection toolkit in active use from 10 November 2025. See [OFSTED_SOURCE_NOTES.md](OFSTED_SOURCE_NOTES.md) for the versioned 10-report pilot corpus, scope boundaries and attribution. The front-page Bodyswaps Interview Packs pilot provides 12 copyable external-practice configurations across two scenario families and six inspector styles; it does not connect to or transmit data to Bodyswaps.
 
 ## Run locally
 
@@ -14,9 +14,11 @@ The included GitHub Actions workflow tests, builds and deploys the site automati
 
 ## Add content
 
-Questions live in `src/data/questions.ts` and use the `InspectionQuestion` contract in `src/types.ts`. Each prompt includes useful evidence, reflection prompts and follow-ups for all personas. Answer-builder option metadata is used for coaching and is not exposed as a score.
+Questions live in `src/data/questions.ts` and use the `InspectionQuestion` contract in `src/types.ts`. Each prompt includes useful evidence, reflection prompts and follow-ups for all personas. Answer-builder metadata drives descriptive coaching and a game-only rehearsal score that is explicitly not an inspection grade or prediction.
 
 Personas live in `src/data/personas.ts`. A new persona requires an ID in `PersonaId`, display content, a Push Me challenge, and compatible follow-up data.
+
+Bodyswaps scenario families and generated pack fields live in `src/data/interviewPacks.ts`. Keep scenario content separate from persona questioning strategy so each family can be combined consistently with all six inspector styles.
 
 ## Disclaimer
 
