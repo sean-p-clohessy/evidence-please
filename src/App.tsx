@@ -78,7 +78,7 @@ function App() {
   }
   const completeAnswer=()=>{
     if(method==='type' && !showReview){ setShowReview(true); return }
-    const result=method==='type'?feedbackFromReview(review,answer,evidence.length):feedbackFromBuild(selected,evidence.length)
+    const result=method==='type'?feedbackFromReview(review,answer,evidence.length,current?.answerBuilder):feedbackFromBuild(selected,evidence.length,current?.answerBuilder)
     const allowed=mode==='quick'?1:2
     if(followCount<allowed && current){
       const next=getFollowUp(current,personaId,followCount)
@@ -190,6 +190,7 @@ function App() {
           <div className="report paper-panel"><div className="report-intro"><Avatar id={personaId}/><p>{debrief.summary}</p></div>
             <h2>Strengths noted</h2><ul>{debrief.strengths.length?debrief.strengths.map(x=><li className="positive" key={x}>{x}</li>):<li>No clear strength was confirmed in the self-review. This is useful information, not a verdict.</li>}</ul>
             <h2>Missed opportunities</h2><ul>{debrief.opportunities.length?debrief.opportunities.map(x=><li key={x}>{x}</li>):<li>Try adding one counter-example or remaining uncertainty.</li>}</ul>
+            {debrief.improvementExample && <div className="improvement-example"><span className="eyebrow">What a stronger answer could sound like</span><p>{debrief.improvementExample}</p><small>This is one possible structure, not a required script. Adapt it to evidence you can substantiate in your own setting.</small></div>}
             <div className="persona-note"><strong>{persona.name} remains focused on {persona.focus.toLowerCase()}.</strong><p>Next time, answer the question in one sentence before adding supporting detail.</p></div>
           </div>
           <div className="ratings paper-panel"><div className="game-score" aria-label={`Rehearsal score: ${debrief.score} out of 100`}><span>Rehearsal score</span><strong>{debrief.score}</strong><small>/ 100 points</small></div><p className="score-note">A game score derived from the indicators below. It is not an inspection grade, prediction or scientific measure.</p><h2>Reflective indicators</h2>{Object.entries(debrief.ratings).map(([name,value])=><div className="rating" key={name}><span>{name}</span><div aria-label={`${name}: ${value} of 5`}>{[1,2,3,4,5].map(n=><i key={n} className={n<=value?'filled':''}/>)}</div><b>{value>=4?'Clear':value>=3?'Developing':'Revisit'}</b></div>)}</div>

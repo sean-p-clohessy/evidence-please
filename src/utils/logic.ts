@@ -76,7 +76,30 @@ export const calculateGameScore = (ratings:Ratings) => {
   const maximum=values.length*5
   return Math.round(((values.reduce((sum,value)=>sum+value,0)-minimum)/(maximum-minimum))*100)
 }
-export const feedbackFromBuild = (selected:Partial<Record<AnswerSection,AnswerOption>>, evidenceCount=0):Debrief => {
+const weaknessCoaching:Record<string,string> = {
+  'process only':'You described a process or activity, but not what changed. Add a measured or observed difference for learners and connect it to the action.',
+  'activity only':'You named activity without demonstrating its effect. State what became better, for whom, and how you know.',
+  'impact not demonstrated':'The claim stops before the result. Add the change in learner experience, progress, participation or achievement and the evidence that verifies it.',
+  'isolated anecdote':'A single example cannot demonstrate typical practice. Show the pattern across groups or provision, then acknowledge any exceptions.',
+  'vague action':'The action is too general to test. Name what changed, who implemented it, where it happened and why that action addressed the evidence.',
+  'unsupported assertion':'The statement is not anchored in evidence. Name a source and explain the finding it revealed.',
+  'unsupported confidence':'The claim is too absolute for the evidence presented. Replace it with a precise current position, including known variation or exceptions.',
+  'unsupported claim':'The statement asserts success without showing the result. Add a specific change and the evidence used to verify it.',
+  'document named, finding unexplained':'Naming a dashboard or report is not evidence by itself. Explain the pattern, comparison or exception that the source revealed.',
+  'no triangulation':'One source may give a partial picture. Compare it with another source, learner voice or direct review evidence.',
+  'overclaim':'The statement is more certain than the evidence allows. Qualify its reach and identify where improvement is not yet consistent.',
+  'no learner focus':'The answer does not yet explain the difference for learners or apprentices. Bring their experience and outcomes into the conclusion.',
+  'vague':'The statement does not identify the unresolved issue or next test. Name what remains weak, what will happen next and what evidence would demonstrate improvement.'
+}
+
+const strongestOption = (options:AnswerOption[]) => [...options].sort((a,b)=>(b.qualitySignals.length*2-b.weaknesses.length)-(a.qualitySignals.length*2-a.weaknesses.length))[0]
+const buildImprovementExample = (builder?:Partial<Record<AnswerSection,AnswerOption[]>>) => {
+  if(!builder) return undefined
+  const example=(Object.keys(builder) as AnswerSection[]).map(section=>strongestOption(builder[section]??[])?.text).filter(Boolean)
+  return example.length ? example.join(' ') : undefined
+}
+
+export const feedbackFromBuild = (selected:Partial<Record<AnswerSection,AnswerOption>>, evidenceCount=0, builder?:Partial<Record<AnswerSection,AnswerOption[]>>):Debrief => {
   const options = Object.values(selected).filter(Boolean) as AnswerOption[]
   const signals = options.flatMap(o=>o.qualitySignals)
   const weaknesses = options.flatMap(o=>o.weaknesses)
@@ -88,17 +111,18 @@ export const feedbackFromBuild = (selected:Partial<Record<AnswerSection,AnswerOp
   ratings.Honesty=Math.min(5,1+signals.filter(s=>s==='honesty').length*2)
   ratings.Directness=Math.min(5,2+Number(options.length>=4))
   ratings['Learner focus']=Math.min(5,1+signals.filter(s=>s==='learner focus').length*2)
-  const strong=signals.length >= 5
+  const strong=weaknesses.length===0&&signals.includes('evidence')&&signals.includes('impact')
+  const score=calculateGameScore(ratings)
   return {
     outcome:strong ? 'Credible and Well Evidenced' : weaknesses.includes('process only') || weaknesses.includes('activity only') ? 'Too Much Process, Not Enough Impact' : 'Requires More Specificity',
     summary:strong ? 'You built a balanced response with evidence, action, impact and an honest view of what remains.' : 'Your response has a credible foundation, but some selected statements need firmer evidence or clearer impact.',
     strengths:[...new Set(signals)].slice(0,3).map(s=>`You demonstrated ${s}.`),
-    opportunities:[...new Set(weaknesses)].slice(0,3).map(w=>`Watch for ${w}.`),
-    ratings, score:calculateGameScore(ratings)
+    opportunities:[...new Set(weaknesses)].slice(0,3).map(w=>weaknessCoaching[w]??`Strengthen the part affected by “${w}” by adding specific evidence and explaining the resulting learner impact.`),
+    ratings, score, improvementExample:score<70?buildImprovementExample(builder):undefined
   }
 }
 
-export const feedbackFromReview = (review:ReviewAnswers, answer:string, evidenceCount=0):Debrief => {
+export const feedbackFromReview = (review:ReviewAnswers, answer:string, evidenceCount=0, builder?:Partial<Record<AnswerSection,AnswerOption[]>>):Debrief => {
   const yes=Object.values(review).filter(Boolean).length
   const signals=analyseTypedAnswer(answer)
   const ratings=emptyRatings()
@@ -118,11 +142,12 @@ export const feedbackFromReview = (review:ReviewAnswers, answer:string, evidence
     signals.learnerConnection&&'The response connects leadership claims to learners.'
   ].filter(Boolean) as string[]
   const supportedCount=observed.length
+  const score=calculateGameScore(ratings)
   return {
     outcome:yes>=5&&supportedCount>=3?'You Answered the Question':yes>=3&&signals.substantive?'Convincing, With Reservations':'Evidence Pending',
     summary:signals.keywordList?'The response contains relevant terms, but isolated words are not treated as evidence of a developed answer.':yes>=5&&supportedCount>=3?'Your self-review and the visible structure of your response suggest a direct, balanced rehearsal answer.':'Your reflection suggests another pass. These prompts identify visible features, not the meaning or accuracy of your response.',
     strengths:[...observed,...Object.entries(review).filter(([,v])=>v).map(([k])=>`Self-review confirmed: ${k}.`)].slice(0,3),
     opportunities:[...typedAnswerPrompts(answer),...Object.entries(review).filter(([,v])=>!v).map(([k])=>`Revisit your self-review item: ${k}.`)].slice(0,3),
-    ratings, score:calculateGameScore(ratings)
+    ratings, score, improvementExample:score<70?buildImprovementExample(builder):undefined
   }
 }

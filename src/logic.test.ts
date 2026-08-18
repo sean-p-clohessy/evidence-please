@@ -35,6 +35,25 @@ describe('feedback',()=>{
     const result=feedbackFromReview({},'A short response with enough words to form one complete sentence.',0)
     expect(result.score).toBe(calculateGameScore(result.ratings))
   })
+  it('explains how to repair weak builder choices and supplies a stronger example',()=>{
+    const builder=questions[0].answerBuilder!
+    const weak=Object.fromEntries(Object.entries(builder).map(([section,options])=>[section,options?.find(option=>option.weaknesses.length)??options?.[0]]))
+    const result=feedbackFromBuild(weak,0,builder)
+    expect(result.opportunities.some(item=>/Add|Show|State|Name/.test(item))).toBe(true)
+    expect(result.improvementExample?.length).toBeGreaterThan(80)
+    expect(result.opportunities.join(' ')).not.toContain('Watch for')
+  })
+  it('does not give a strong headline when an impact choice fails to demonstrate impact',()=>{
+    const builder=questions[0].answerBuilder!
+    const result=feedbackFromBuild({
+      currentPosition:builder.currentPosition?.[0], evidence:builder.evidence?.[0], action:builder.action?.[0],
+      impact:builder.impact?.find(option=>option.weaknesses.includes('impact not demonstrated')),
+      remainingChallenge:builder.remainingChallenge?.[0]
+    },2,builder)
+    expect(result.ratings.Impact).toBe(1)
+    expect(result.outcome).not.toBe('Credible and Well Evidenced')
+    expect(result.improvementExample).toBeTruthy()
+  })
   it('respects push limits',()=>{expect(canPush(1)).toBe(true);expect(canPush(2)).toBe(false)})
 })
 
