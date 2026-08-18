@@ -20,3 +20,8 @@
 .writing-prompts li+li{margin-top:5px}
 .framework-note{margin:0 0 16px;padding:10px 12px;background:#242d26;border-left:4px solid var(--green2);color:#c7cbbf;font-size:11px;line-height:1.5}
 .stream-grid{margin-bottom:18px}
+.follow-up span{display:block;margin-top:6px;font-size:12px}
+.follow-up-response{border:2px solid #93712d;background:#e4dbc6;padding:15px}
+.follow-up-response label strong,.follow-up-response label span{display:block}
+.follow-up-response label span{font-size:12px;margin:4px 0 10px;color:#5c5547}
+.follow-up-response textarea{width:100%;resize:vertical;background:#f1ecdf;border:1px solid #807c70;padding:12px;color:#23251f}

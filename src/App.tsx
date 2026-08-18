@@ -40,6 +40,7 @@ function App() {
   const [evidence,setEvidence]=useState<string[]>([])
   const [review,setReview]=useState<ReviewAnswers>({})
   const [followUp,setFollowUp]=useState('')
+  const [followUpAnswer,setFollowUpAnswer]=useState('')
   const [followCount,setFollowCount]=useState(0)
   const [pushCount,setPushCount]=useState(0)
   const [notes,setNotes]=useState('')
@@ -68,7 +69,7 @@ function App() {
   },[screen,startedAt])
 
   const resetQuestion=(id:string)=>{
-    setCurrentId(id); setAnswer(''); setSelected({}); setEvidence([]); setReview({}); setFollowUp(''); setFollowCount(0); setPushCount(0); setShowReview(false); setTab('answer')
+    setCurrentId(id); setAnswer(''); setSelected({}); setEvidence([]); setReview({}); setFollowUp(''); setFollowUpAnswer(''); setFollowCount(0); setPushCount(0); setShowReview(false); setTab('answer')
   }
   const start=()=>{
     const q=nextQuestion(filtered,[],selectedThemes.join('').length)
@@ -81,7 +82,7 @@ function App() {
     const allowed=mode==='quick'?1:2
     if(followCount<allowed && current){
       const next=getFollowUp(current,personaId,followCount)
-      if(next){ setFollowUp(next); setFollowCount(c=>c+1); return }
+      if(next){ setFollowUp(next); setFollowUpAnswer(''); setFollowCount(c=>c+1); setTab('answer'); return }
     }
     const done=completed+1
     if(mode==='mock' && done<target){
@@ -146,7 +147,7 @@ function App() {
           <span>Inspection in progress</span><span>{mode==='mock'?`Question ${completed+1} of ${target}`:'Question 1 of 1'}</span><span aria-label={`Elapsed time ${elapsed}`}>◷ {elapsed}</span>
         </div>
         <div className="inspector-strip"><Avatar id={personaId} large/><div><small>{persona.title} · toolkit area: {current.frameworkArea}</small><h1 id="session-heading" ref={headingRef} tabIndex={-1}>{persona.name} asks:</h1><p>{current.question}</p></div></div>
-        {followUp && <div className="follow-up" role="status"><strong>Reflective follow-up:</strong> {followUp}</div>}
+        {followUp && <div className="follow-up" role="status"><strong>{persona.name} follows up:</strong> {followUp}<span>{method==='build'?'Revise any answer components that need changing, then write your direct response in the follow-up box below.':'Revise your answer above so that it responds directly to this challenge, then continue.'}</span></div>}
         <div className="session-grid">
           <div className="work-area">
             <div className="tabs" role="tablist" aria-label="Session workspace">
@@ -164,15 +165,20 @@ function App() {
                   {shuffleOptions(current.answerBuilder?.[section.id]??[],`${current.id}-${section.id}-${startedAt}`).map(o=><button key={o.id} className={selected[section.id]?.id===o.id?'answer-option selected':'answer-option'} onClick={()=>setSelected(v=>({...v,[section.id]:o}))} aria-pressed={selected[section.id]?.id===o.id}>{o.text}</button>)}
                   {!current.answerBuilder?.[section.id] && <p className="unavailable">No prepared components for this prompt. Choose another question or use Type My Answer.</p>}
                 </div></div>)}
+                {followUp && <div className="follow-up-response">
+                  <label htmlFor="follow-up-answer"><strong>Your response to the follow-up</strong><span>Explain the point in your own words. You can also change any selected component above.</span></label>
+                  <textarea id="follow-up-answer" rows={5} value={followUpAnswer} onChange={e=>setFollowUpAnswer(e.target.value)} placeholder={`Respond directly to ${persona.name}'s follow-up…`}/>
+                  <div className="counter">{followUpAnswer.length} characters</div>
+                </div>}
               </div>}
             </div>}
             {tab==='evidence' && <div className="paper-panel evidence-panel"><div className="library-heading"><div><h2>Evidence library</h2><p>Select up to three sources. Naming a document is not the same as explaining what it demonstrates.</p></div><span>{evidence.length}/3 filed</span></div><div className="document-grid">
               {evidenceTypes.map((item,i)=><button key={item} className={evidence.includes(item)?'document selected':'document'} disabled={!evidence.includes(item)&&evidence.length>=3} onClick={()=>toggleEvidence(item)} aria-pressed={evidence.includes(item)}><i>EP-{String(i+1).padStart(2,'0')}</i><strong>{item}</strong><small>{current.usefulEvidence.includes(item)?'Suggested for this prompt':'Available reference'}</small></button>)}
             </div></div>}
             {tab==='notes' && <div className="paper-panel"><label htmlFor="notes"><strong>Session notes</strong><span className="hint">Private working notes for this browser session.</span></label><textarea id="notes" rows={14} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Record a figure to check, a weakness to revisit, or a better way to frame the answer…"/></div>}
-            <div className="action-row"><button className="secondary" onClick={skip}>Request another question</button><button className="primary" onClick={completeAnswer} disabled={method==='type'?!answer.trim():(Object.keys(selected).length<3)}>{method==='type'&&!showReview?'Review answer':followUp?'Respond & continue':'Submit answer'} →</button></div>
+            <div className="action-row"><button className="secondary" onClick={skip}>Request another question</button><button className="primary" onClick={completeAnswer} disabled={method==='type'?!answer.trim():(Object.keys(selected).length<3 || (!!followUp&&!followUpAnswer.trim()))}>{method==='type'&&!showReview?'Review answer':followUp?'Submit follow-up & continue':'Submit answer'} →</button></div>
           </div>
-          <aside className="challenge-panel"><span className="eyebrow">Challenge desk</span><Avatar id={personaId}/><h2>{persona.name} is listening.</h2><p>{persona.challenge}</p><button className="push-button" disabled={!canPush(pushCount)} onClick={()=>{setFollowUp(persona.push);setPushCount(c=>c+1)}}>Push me <span>{pushCount}/2</span></button><small>{canPush(pushCount)?'Request a stronger challenge.':'Maximum challenge filed.'}</small>
+          <aside className="challenge-panel"><span className="eyebrow">Challenge desk</span><Avatar id={personaId}/><h2>{persona.name} is listening.</h2><p>{persona.challenge}</p><button className="push-button" disabled={!canPush(pushCount)} onClick={()=>{setFollowUp(persona.push);setFollowUpAnswer('');setTab('answer');setPushCount(c=>c+1)}}>Push me <span>{pushCount}/2</span></button><small>{canPush(pushCount)?'Request a stronger challenge.':'Maximum challenge filed.'}</small>
             <div className="evidence-summary"><strong>Evidence attached</strong>{evidence.length?evidence.map(x=><span key={x}>▰ {x}</span>):<em>None. Claim submitted; proof pending.</em>}</div>
           </aside>
         </div>
