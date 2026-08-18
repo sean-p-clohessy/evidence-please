@@ -1,7 +1,9 @@
-import type { AnswerOption, InspectionQuestion, PersonaId } from '../types'
+import type { AnswerOption, FrameworkArea, InspectionQuestion, PersonaId, ProvisionStream } from '../types'
+import { activeFramework, findReportPattern } from './ofstedCorpus'
 
-const allSettings = ['Further Education College','School','Sixth Form','Independent Training Provider','Apprenticeship Provider','Adult Education','Higher Education','Special Education','Other']
+const allSettings = ['General Further Education College']
 const allRoles = ['Senior Leader','Curriculum Leader','Head of Department','Quality Leader','Safeguarding Lead','SEND Lead','Teacher or Lecturer','Governor or Trustee','Apprenticeship Manager','Other']
+const allStreams:ProvisionStream[]=['Education programmes for young people','Adult learning programmes','Apprenticeships','Provision for learners with high needs','HE pathways and higher apprenticeships','Commercial and employer-responsive provision']
 
 const followUps: Record<PersonaId, string[]> = {
   chris:['What evidence supports that judgement?','How have you triangulated that evidence?','What evidence suggests a different conclusion?'],
@@ -13,33 +15,56 @@ const followUps: Record<PersonaId, string[]> = {
 }
 
 const option = (id:string, text:string, good:string[]=[], weak:string[]=[]): AnswerOption => ({id,text,qualitySignals:good,weaknesses:weak})
-const builder = (stem:string) => ({
+const builder = (stem:string,theme:string,index:number) => {
+  const pattern=findReportPattern(theme,index)
+  return ({
   currentPosition:[
     option('cp1',`Our current position is mixed: ${stem.toLowerCase()} is secure in most areas, with two known exceptions.`,['specificity','honesty']),
+    option('cp4',pattern.fragments.currentPosition,['specificity','honesty','consistency']),
     option('cp2',`${stem} is outstanding across the board.`,[],['unsupported confidence']),
     option('cp3',`We have a robust process for ${stem.toLowerCase()}.`,[],['process only'])
   ],
   evidence:[
     option('ev1','Three sources show the same pattern, including trend data, learner feedback and direct review.',['evidence','triangulation']),
+    option('ev4',pattern.fragments.evidence,['evidence','triangulation','specificity']),
     option('ev2','Our dashboard is reviewed regularly.',[],['document named, finding unexplained']),
     option('ev3','A recent case study was very positive.',[],['isolated anecdote'])
   ],
   action:[
     option('ac1','Leaders targeted the weaker areas, set named responsibilities and reviewed progress at six-week intervals.',['action','specificity']),
+    option('ac4',pattern.fragments.action,['action','specificity']),
     option('ac2','We held meetings and delivered training.',[],['activity only']),
     option('ac3','Staff were reminded of expectations.',[],['vague action'])
   ],
   impact:[
     option('im1','The gap narrowed over two terms, although one area remains below the organisation’s expectation.',['impact','honesty']),
+    option('im4',pattern.fragments.impact,['impact','honesty']),
     option('im2','The action was well received by staff.',[],['impact not demonstrated']),
     option('im3','This has had a significant impact.',[],['unsupported claim'])
   ],
   remainingChallenge:[
     option('rc1','We have not yet secured consistency in the weakest area; the next review will test whether recent gains endure.',['honesty','consistency']),
+    option('rc4',pattern.fragments.remainingChallenge,['honesty','consistency','insight']),
     option('rc2','There are no remaining challenges.',[],['unsupported confidence']),
     option('rc3','We continue to monitor the situation.',[],['vague'])
   ]
-})
+})}
+
+const frameworkAreaForTheme = (theme:string):FrameworkArea => ({
+  'Safeguarding':'Safeguarding','SEND and High Needs':'Inclusion','Leadership and Governance':'Leadership and governance',
+  'Governance and Oversight':'Leadership and governance','Staff Development':'Leadership and governance','Employer Engagement':'Contribution to meeting skills needs',
+  'Curriculum Intent and Sequencing':'Curriculum, teaching and training','Teaching, Learning and Assessment':'Curriculum, teaching and training',
+  'Quality of Education':'Curriculum, teaching and training','Achievement':'Achievement','Destinations and Progression':'Achievement',
+  'Attendance':'Participation and development','Behaviour and Attitudes':'Participation and development','Personal Development':'Participation and development',
+  'Learner Voice':'Participation and development','Quality Improvement':'Leadership and governance'
+}[theme]??'Leadership and governance') as FrameworkArea
+
+const streamsForTheme = (theme:string):ProvisionStream[] => {
+  if(theme==='SEND and High Needs') return ['Provision for learners with high needs']
+  if(theme==='Employer Engagement') return ['Apprenticeships','Commercial and employer-responsive provision','Adult learning programmes','Education programmes for young people']
+  if(theme==='Destinations and Progression') return allStreams
+  return allStreams
+}
 
 type Seed = [string,string,string,string]
 const seeds: Seed[] = [
@@ -97,10 +122,11 @@ export const questions: InspectionQuestion[] = seeds.map(([theme, phrase, subthe
   const personas = Object.fromEntries((Object.keys(followUps) as PersonaId[]).map(id => [id,{followUps:followUps[id],feedbackFocus:[id === 'jenny' ? 'impact' : id === 'chris' ? 'evidence' : id === 'raj' ? 'consistency' : id === 'sarah' ? 'learner focus' : id === 'martin' ? 'oversight' : 'curriculum thinking']}])) as InspectionQuestion['personas']
   return {
     id:`q${String(index+1).padStart(2,'0')}`, theme, subtheme, settings:allSettings, roles:allRoles,
+    frameworkEdition:activeFramework.id, frameworkArea:frameworkAreaForTheme(theme), provisionStreams:streamsForTheme(theme),
     question:`How do leaders ${phrase}?`,
     contextPrompt:'Answer from your own organisational context. Be specific about the current position, evidence and impact.',
     personas, usefulEvidence:[evidence,'Quality Improvement Plan','Learner Survey'].filter((v,i,a)=>a.indexOf(v)===i),
     reflectionPrompts:['What is the strongest evidence for this claim?','What changed, and for whom?','What remains weaker or uncertain?'],
-    answerBuilder:index < 18 ? builder(subtheme) : undefined
+    answerBuilder:builder(subtheme,theme,index)
   }
 })

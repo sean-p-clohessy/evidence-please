@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { evidenceTypes } from './data/evidence'
 import { personas } from './data/personas'
 import { questions } from './data/questions'
-import { modes, roles, settings, themes } from './data/settings'
-import type { AnswerMethod, AnswerOption, AnswerSection, Debrief, ModeId, PersonaId, ReviewAnswers } from './types'
-import { canPush, feedbackFromBuild, feedbackFromReview, filterQuestions, getFollowUp, nextQuestion } from './utils/logic'
+import { modes, provisionStreams, roles, settings, themes } from './data/settings'
+import type { AnswerMethod, AnswerOption, AnswerSection, Debrief, ModeId, PersonaId, ProvisionStream, ReviewAnswers } from './types'
+import { canPush, feedbackFromBuild, feedbackFromReview, filterQuestions, getFollowUp, nextQuestion, shuffleOptions, typedAnswerPrompts } from './utils/logic'
 
 type Screen='title'|'setup'|'session'|'debrief'
 const reviewItems=[
@@ -31,6 +31,7 @@ function App() {
   const [setting,setSetting]=useState(settings[0])
   const [role,setRole]=useState(roles[0])
   const [selectedThemes,setSelectedThemes]=useState<string[]>(['Quality of Education'])
+  const [selectedStreams,setSelectedStreams]=useState<ProvisionStream[]>([...provisionStreams])
   const [method,setMethod]=useState<AnswerMethod>('type')
   const [currentId,setCurrentId]=useState('')
   const [used,setUsed]=useState<string[]>([])
@@ -52,10 +53,11 @@ function App() {
 
   const persona=personas.find(p=>p.id===personaId)!
   const filtered=useMemo(()=>{
-    const matches=filterQuestions(questions,setting,role,selectedThemes)
+    const matches=filterQuestions(questions,setting,role,selectedThemes,selectedStreams)
     return method==='build'?matches.filter(q=>q.answerBuilder):matches
-  },[setting,role,selectedThemes,method])
+  },[setting,role,selectedThemes,selectedStreams,method])
   const current=questions.find(q=>q.id===currentId)
+  const writingPrompts=useMemo(()=>typedAnswerPrompts(answer),[answer])
   const target=mode==='mock'?Math.min(6,Math.max(4,selectedThemes.length*2)):1
 
   useEffect(()=>{ headingRef.current?.focus() },[screen])
@@ -94,6 +96,7 @@ function App() {
   }
   const toggleEvidence=(item:string)=>setEvidence(v=>v.includes(item)?v.filter(x=>x!==item):v.length<3?[...v,item]:v)
   const toggleTheme=(theme:string)=>setSelectedThemes(v=>v.includes(theme)?(v.length>1?v.filter(t=>t!==theme):v):[...v,theme])
+  const toggleStream=(stream:ProvisionStream)=>setSelectedStreams(v=>v.includes(stream)?(v.length>1?v.filter(item=>item!==stream):v):[...v,stream])
 
   return <div className="app-shell">
     <header className="topbar"><span className="seal">EP</span><span>EVIDENCE CONTROL SYSTEM</span><span className="top-status"><i/> SYSTEM READY · v0.1.0</span></header>
@@ -127,11 +130,12 @@ function App() {
             <Avatar id={p.id}/><span><strong>{p.name}</strong><small>{p.title}</small><em>{p.focus}</em></span>
           </button>)}
         </div></fieldset>
-        <fieldset className="setup-section"><legend><span>03</span> File the particulars</legend><div className="form-grid">
-          <label>Education setting<select value={setting} onChange={e=>setSetting(e.target.value)}>{settings.map(x=><option key={x}>{x}</option>)}</select></label>
+        <fieldset className="setup-section"><legend><span>03</span> File the particulars</legend><p className="framework-note"><strong>Framework edition:</strong> renewed FE and skills toolkit currently in use since 10 November 2025. The September 2026 revision is not yet applied.</p><div className="form-grid">
+          <label>College type<select value={setting} onChange={e=>setSetting(e.target.value)}>{settings.map(x=><option key={x}>{x}</option>)}</select></label>
           <label>Your role<select value={role} onChange={e=>setRole(e.target.value)}>{roles.map(x=><option key={x}>{x}</option>)}</select></label>
           <label>Answer method<select value={method} onChange={e=>setMethod(e.target.value as AnswerMethod)}><option value="type">Type my answer</option><option value="build">Build my answer</option></select></label>
         </div>
+        <span className="field-label">Provision streams — choose one or more</span><div className="chip-grid stream-grid">{provisionStreams.map(stream=><button key={stream} className={selectedStreams.includes(stream)?'chip selected':'chip'} aria-pressed={selectedStreams.includes(stream)} onClick={()=>toggleStream(stream)}>{stream}</button>)}</div>
         <span className="field-label">Themes — choose one or more</span><div className="chip-grid">{themes.map(t=><button key={t} className={selectedThemes.includes(t)?'chip selected':'chip'} aria-pressed={selectedThemes.includes(t)} onClick={()=>toggleTheme(t)}>{t}</button>)}</div>
         </fieldset>
         <div className="setup-submit"><div><span className="status-dot"/> {filtered.length} suitable rehearsal prompts located</div><button className="primary big" onClick={start} disabled={!filtered.length}>Start session →</button></div>
@@ -141,7 +145,7 @@ function App() {
         <div className="session-status">
           <span>Inspection in progress</span><span>{mode==='mock'?`Question ${completed+1} of ${target}`:'Question 1 of 1'}</span><span aria-label={`Elapsed time ${elapsed}`}>◷ {elapsed}</span>
         </div>
-        <div className="inspector-strip"><Avatar id={personaId} large/><div><small>{persona.title}</small><h1 id="session-heading" ref={headingRef} tabIndex={-1}>{persona.name} asks:</h1><p>{current.question}</p></div></div>
+        <div className="inspector-strip"><Avatar id={personaId} large/><div><small>{persona.title} · toolkit area: {current.frameworkArea}</small><h1 id="session-heading" ref={headingRef} tabIndex={-1}>{persona.name} asks:</h1><p>{current.question}</p></div></div>
         {followUp && <div className="follow-up" role="status"><strong>Reflective follow-up:</strong> {followUp}</div>}
         <div className="session-grid">
           <div className="work-area">
@@ -153,10 +157,11 @@ function App() {
               {method==='type' ? <>
                 <label className="sr-only" htmlFor="answer">Your answer</label><textarea id="answer" rows={10} value={answer} onChange={e=>setAnswer(e.target.value)} placeholder="Establish the position. Explain your evidence. Describe the impact…"/>
                 <div className="counter">{answer.length} characters</div>
+                {writingPrompts.length>0 && <div className="writing-prompts" aria-live="polite"><strong>Rehearsal prompts</strong><span>Pattern-based prompts only; your response has not been graded.</span><ul>{writingPrompts.map(prompt=><li key={prompt}>{prompt}</li>)}</ul></div>}
                 {showReview && <fieldset className="self-review"><legend>Self-review before submission</legend>{reviewItems.map(([id,label])=><label key={id}><input type="checkbox" checked={!!review[id]} onChange={e=>setReview(v=>({...v,[id]:e.target.checked}))}/>{label}</label>)}</fieldset>}
               </> : <div className="builder">
                 {sections.map(section=><div className="builder-section" key={section.id}><h2>{section.label}</h2><div className="option-list">
-                  {(current.answerBuilder?.[section.id]??[]).map(o=><button key={o.id} className={selected[section.id]?.id===o.id?'answer-option selected':'answer-option'} onClick={()=>setSelected(v=>({...v,[section.id]:o}))} aria-pressed={selected[section.id]?.id===o.id}>{o.text}</button>)}
+                  {shuffleOptions(current.answerBuilder?.[section.id]??[],`${current.id}-${section.id}-${startedAt}`).map(o=><button key={o.id} className={selected[section.id]?.id===o.id?'answer-option selected':'answer-option'} onClick={()=>setSelected(v=>({...v,[section.id]:o}))} aria-pressed={selected[section.id]?.id===o.id}>{o.text}</button>)}
                   {!current.answerBuilder?.[section.id] && <p className="unavailable">No prepared components for this prompt. Choose another question or use Type My Answer.</p>}
                 </div></div>)}
               </div>}

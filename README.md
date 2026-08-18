@@ -2,6 +2,8 @@
 
 A browser-based professional-development game for education leaders to rehearse challenging inspection-style conversations. It is a static React/TypeScript application with no login, backend, uploads or remote assessment.
 
+The current content release is focused on General Further Education and Tertiary colleges and the renewed FE and skills inspection toolkit in active use from 10 November 2025. See [OFSTED_SOURCE_NOTES.md](OFSTED_SOURCE_NOTES.md) for the versioned 10-report pilot corpus, scope boundaries and attribution.
+
 ## Run locally
 
 Requires Node.js 20+. Run `npm install`, then `npm run dev`. Checks: `npm test`, `npm run build`, and `npm run preview`.

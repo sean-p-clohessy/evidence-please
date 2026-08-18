@@ -2,6 +2,8 @@
 
 Write one credible professional challenge at a time. Make its scope clear, use language appropriate to the role and setting, and invite the user to answer from their own context. Never describe a prompt as official or predict what an inspector will ask. Do not invent or misquote regulatory requirements.
 
+Report-informed content must use the framework edition and source metadata in `src/data/ofstedCorpus.ts`. Paraphrase patterns across multiple reports; do not transplant provider-specific findings or imply that a published finding applies universally. Keep Access to HE, higher apprenticeships and commercial provision within the actual scope described in `OFSTED_SOURCE_NOTES.md`.
+
 Follow-ups should expose a missing dimension: evidence for Chris; changed outcomes for Jenny; organisational spread for Raj; lived experience for Sarah; assurance for Martin; and curriculum reasoning for Elaine.
 
 Evidence says what is known and why it is credible. Action says what leaders did. Impact says what changed. A document title, meeting or training event is not impact. Strong options are specific, balanced and candid; weak options may be vague, activity-only, anecdotal or over-confident while remaining plausible.
