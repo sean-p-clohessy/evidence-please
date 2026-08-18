@@ -114,6 +114,11 @@ export const feedbackFromBuild = (selected:Partial<Record<AnswerSection,AnswerOp
   ratings.Directness=Math.min(5,options.length)
   ratings['Learner focus']=learnerMentions>0||signals.includes('learner focus')?5:1
   ratings.Brevity=selectedText.length>1200?2:selectedText.length>800?4:5
+  if(selected.currentPosition?.weaknesses.length){ ratings.Insight=Math.min(ratings.Insight,2); ratings.Directness=Math.min(ratings.Directness,4) }
+  if(selected.evidence?.weaknesses.length) ratings.Evidence=Math.min(ratings.Evidence,2)
+  if(selected.action?.weaknesses.length) ratings.Insight=Math.min(ratings.Insight,3)
+  if(selected.impact?.weaknesses.length) ratings.Impact=Math.min(ratings.Impact,2)
+  if(selected.remainingChallenge?.weaknesses.length){ ratings.Honesty=Math.min(ratings.Honesty,2); ratings.Consistency=Math.min(ratings.Consistency,3) }
   const strong=weaknesses.length===0&&signals.includes('evidence')&&signals.includes('impact')
   const score=calculateGameScore(ratings)
   const weaknessOpportunities=[...new Set(weaknesses)].map(w=>weaknessCoaching[w]??`Strengthen the part affected by “${w}” by adding specific evidence and explaining the resulting learner impact.`)
